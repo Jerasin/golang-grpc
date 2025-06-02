@@ -1,0 +1,15 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api.dev
+    container_name: api
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/app
+    # depends_on:
+    #    db:
+    #     condition: service_healthy
+
+

@@ -1,0 +1,18 @@
+FROM golang:1.24.2 
+
+WORKDIR /app 
+
+
+COPY . .
+
+ENV APP_ENV=development
+
+# remove package not used in go.mod with update go.sum
+RUN go mod tidy
+
+RUN go mod download 
+RUN go install github.com/codegangsta/gin@latest
+
+EXPOSE 3000 
+
+CMD ["gin","-a","3001","-p","3000","--buildArgs","-buildvcs=false","run","main.go"]

@@ -1,0 +1,17 @@
+FROM golang:1.24.3
+
+WORKDIR /app 
+
+COPY . .
+
+RUN go install github.com/air-verse/air@latest
+
+# remove package not used in go.mod with update go.sum
+RUN go mod tidy
+RUN go mod download 
+
+
+EXPOSE 3000 
+
+CMD ["air"]
+# CMD ["go","run","-tags=dev","cmd/main.go"]

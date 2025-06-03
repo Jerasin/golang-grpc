@@ -1,7 +1,6 @@
 package main
 
 import (
-	"auth-svc/pkg/config"
 	"auth-svc/pkg/pb"
 	"auth-svc/pkg/services"
 	"fmt"
@@ -12,22 +11,23 @@ import (
 )
 
 func main() {
-	c, err := config.LoadConfig()
+	// c, err := config.LoadConfig()
 
-	if err != nil {
-		log.Fatalln("failed at config ", err)
-	}
+	// fmt.Println("Auth svc config loaded", c.Port)
 
-	lis, err := net.Listen("tcp", c.Port)
+	// if err != nil {
+	// 	log.Fatalln("failed at config ", err)
+	// }
 
+	fmt.Println("Starting Auth Service...")
+
+	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalln("failed at listening : ", err)
 	}
-	fmt.Println("Auth svc on ", c.Port)
 
 	grpcServer := grpc.NewServer()
 	s := services.Server{}
-
 	pb.RegisterAuthServiceServer(grpcServer, &s)
 
 	if err := grpcServer.Serve(lis); err != nil {

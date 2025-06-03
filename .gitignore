@@ -1,2 +1,8 @@
 gin-bin
 .DS_Store
+
+api-gateway/tmp
+api-gateway/gin-bin
+
+auth-svc/main
+auth-svc/gin-bin

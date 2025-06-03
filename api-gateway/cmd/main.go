@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("auth-svc:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
@@ -22,9 +22,13 @@ func main() {
 
 	app.Use(logger.New())
 
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello, World!1")
+	})
+
 	app.Get("message", func(c *fiber.Ctx) error {
 		req := &pb.TestRequest{
-			Name: "World",
+			Name: "World1",
 		}
 		if res, err := auth.Test(context.Background(), req); err == nil {
 			return c.Status(fiber.StatusOK).JSON(fiber.Map{

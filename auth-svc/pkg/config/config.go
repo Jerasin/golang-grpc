@@ -8,6 +8,7 @@ type Config struct {
 	JWTSecretKey  string `mapstructure:"JWT_SECRET_KEY"`
 	AdminEmail    string `mapstructure:"ADMIN_EMAIL"`
 	AdminPassword string `mapstructure:"ADMIN_PASSWORD"`
+	MongoUri      string `mapstructure:"MONGO_URI"`
 }
 
 func LoadConfig() (Config, error) {

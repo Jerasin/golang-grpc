@@ -1,45 +1,30 @@
-dev: destroy build-package build up logs
-prod: destroy build-prod up logs
+run-all:
+	cd api-gateway && make server &
+	cd auth-svc && make server 
+	# cd order-svc && make server &
+	# cd product-svc && make server &
 
-run: up logs
+view-ports:
+	netstat -ano | findstr :3000
+	netstat -ano | findstr :50051
+	# netstat -ano | findstr :50052
+	# netstat -ano | findstr :50053
+#replace process id number with results from make ports command
+stop:
+	taskkill /PID 13988 /F
+	taskkill /PID 9160 /F
+	taskkill /PID 8868 /F
+	taskkill /PID 6864 /F
+docker-build:
+	cd api-gateway && docker build -t amalmadhu06/ecom-api-gateway .
+	cd auth-svc && docker build -t amalmadhu06/ecom-auth-svc .
+	cd order-svc && docker build -t amalmadhu06/ecom-order-svc .
+	cd product-svc && docker build -t amalmadhu06/ecom-product-svc .
 
-
-
-
-build-package:
-	go mod tidy
-build:
-	@COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build $(c)
-destroy:
-	@docker-compose down -v $(c)
-up:
-	@docker-compose up -d $(c)
-up-db:
-	@docker-compose -f docker-compose.yml up -d db $(c)
-logs:
-	@docker-compose logs --tail=100 -f $(c)
-down:
-	@docker-compose down $(c)
-
-build-prod:
-	@COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose -f docker-compose.prod.yml build $(c)
-
-set-env-test:
-	export RUN_TEST_MODE=dev
-
-go-test:
-	RUN_TEST_MODE=prod go test -v -count=1 ./... 
-
-go-test-debug:
-	go test -v -count=1 ./... 
-
-test:
-	@make generate-mock
-	@make go-test
-
-generate-mock:
-	mockery --name=BaseServiceInterface --dir=./app/service  --output=./app/mocks --filename=base_service_mock.go
-	mockery --name=BaseRepositoryInterface --dir=./app/repository  --output=./app/mocks --filename=base_repository_mock.go
-
-test-debug:
-	@make go-test-debug
+docker-push:
+	cd api-gateway && docker push amalmadhu06/ecom-api-gateway
+	cd auth-svc && docker push amalmadhu06/ecom-auth-svc
+	cd order-svc && docker push amalmadhu06/ecom-order-svc
+	cd product-svc && docker push amalmadhu06/ecom-product-svc
+run:
+	sudo docker compose up

@@ -3,39 +3,37 @@ package services
 import (
 	"auth-svc/pkg/models"
 	"auth-svc/pkg/pb"
+	"auth-svc/pkg/repositories"
+	"auth-svc/pkg/utils"
 	"context"
 
-	"github.com/goforj/godump"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type Server struct {
 	pb.UnimplementedAuthServiceServer
-	MongoCon *mongo.Client
+	UserRepo *repositories.UserRepository
 }
 
 func (s *Server) Test(_ context.Context, req *pb.TestRequest) (*pb.TestResponse, error) {
-	bookCollection := s.MongoCon.Database("books").Collection("books")
-	if bookCollection == nil {
-		return nil, status.Errorf(codes.Internal, "failed to connect to database")
-	}
-
-	var books []models.Book
-	cursor, err := bookCollection.Find(context.Background(), bson.D{})
-	if err != nil {
-		return nil, err
-	}
-	for cursor.Next(context.TODO()) {
-		var book models.Book
-		_ = cursor.Decode(&book)
-		books = append(books, book)
-	}
-
-	godump.Dump(books)
 	return &pb.TestResponse{
 		Message: "Hello " + req.Name,
+	}, nil
+}
+
+func (s *Server) Register(_ context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+
+	if _, err := s.UserRepo.IsExist(map[string]any{"email": req.Email}); err == nil {
+		return nil, status.Errorf(codes.AlreadyExists, "Email already exists")
+	}
+
+	s.UserRepo.Register(&models.User{
+		Email:    req.Email,
+		Password: utils.HashPassword(req.Password),
+	})
+
+	return &pb.RegisterResponse{
+		Status: 200,
 	}, nil
 }

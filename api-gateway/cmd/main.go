@@ -1,6 +1,7 @@
 package main
 
 import (
+	"api-gateway/api/v1/routes"
 	"api-gateway/pkg/auth/pb"
 	"context"
 	"log"
@@ -40,6 +41,11 @@ func main() {
 			})
 		}
 	})
+
+	api := app.Group("/api")
+	v1 := api.Group("/v1")
+
+	routes.AuthRouter(v1, auth)
 
 	log.Fatal(app.Listen(":3000"))
 }

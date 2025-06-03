@@ -4,6 +4,7 @@ import (
 	"auth-svc/pkg/config"
 	"auth-svc/pkg/db"
 	"auth-svc/pkg/pb"
+	"auth-svc/pkg/repositories"
 	"auth-svc/pkg/services"
 
 	"log"
@@ -22,6 +23,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Database Connection Error: ", err)
 	}
+	defer cancel()
 
 	lis, err := net.Listen("tcp", c.Port)
 	if err != nil {
@@ -29,8 +31,10 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
+	userCollection := con.Database(c.DbName).Collection(c.UserCollection)
+	userRepo := repositories.NewUserRepository(userCollection)
 	s := services.Server{
-		MongoCon: con,
+		UserRepo: userRepo,
 	}
 	pb.RegisterAuthServiceServer(grpcServer, &s)
 
@@ -38,5 +42,4 @@ func main() {
 		log.Fatalln("Failed to serve:", err)
 	}
 
-	defer cancel()
 }

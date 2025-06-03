@@ -3,12 +3,14 @@ package config
 import "github.com/spf13/viper"
 
 type Config struct {
-	Port          string `mapstructure:"PORT"`
-	DBUrl         string `mapstructure:"DB_URL"`
-	JWTSecretKey  string `mapstructure:"JWT_SECRET_KEY"`
-	AdminEmail    string `mapstructure:"ADMIN_EMAIL"`
-	AdminPassword string `mapstructure:"ADMIN_PASSWORD"`
-	MongoUri      string `mapstructure:"MONGO_URI"`
+	Port           string `mapstructure:"PORT"`
+	DBUrl          string `mapstructure:"DB_URL"`
+	JWTSecretKey   string `mapstructure:"JWT_SECRET_KEY"`
+	AdminEmail     string `mapstructure:"ADMIN_EMAIL"`
+	AdminPassword  string `mapstructure:"ADMIN_PASSWORD"`
+	MongoUri       string `mapstructure:"MONGO_URI"`
+	DbName         string `mapstructure:"DB_NAME"`
+	UserCollection string `mapstructure:"USER_COLLECTION"`
 }
 
 func LoadConfig() (Config, error) {

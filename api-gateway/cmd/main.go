@@ -3,6 +3,7 @@ package main
 import (
 	"api-gateway/api/v1/routes"
 	"api-gateway/pkg/auth/pb"
+	"api-gateway/pkg/config"
 	"context"
 	"log"
 
@@ -13,11 +14,16 @@ import (
 )
 
 func main() {
-	conn, err := grpc.NewClient("auth-svc:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	c, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalln("failed at config ", err)
+	}
+
+	conn, err := grpc.NewClient(c.AuthServiceClient, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
-	auth := pb.NewAuthServiceClient(conn)
+	authService := pb.NewAuthServiceClient(conn)
 
 	app := fiber.New()
 
@@ -31,7 +37,7 @@ func main() {
 		req := &pb.TestRequest{
 			Name: "World1",
 		}
-		if res, err := auth.Test(context.Background(), req); err == nil {
+		if res, err := authService.Test(context.Background(), req); err == nil {
 			return c.Status(fiber.StatusOK).JSON(fiber.Map{
 				"message": res.GetMessage(),
 			})
@@ -44,8 +50,8 @@ func main() {
 
 	api := app.Group("/api")
 	v1 := api.Group("/v1")
+	auth := v1.Group("/auth")
+	routes.AuthRouter(auth, authService)
 
-	routes.AuthRouter(v1, auth)
-
-	log.Fatal(app.Listen(":3000"))
+	log.Fatal(app.Listen(c.Port))
 }

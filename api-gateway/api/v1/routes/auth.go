@@ -8,6 +8,6 @@ import (
 )
 
 func AuthRouter(app fiber.Router, service pb.AuthServiceClient) {
-	app.Post("/register", services.RegisterUser(service))
-
+	app.Post("/register/user", services.RegisterUser(service))
+	app.Post("/login/user", services.LoginUser(service))
 }

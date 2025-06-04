@@ -19,7 +19,7 @@ func PanicException(responseKey constant.ResponseStatus, message *string) {
 		PanicException_(responseKey.GetResponseStatus(), responseKey.GetResponseMessage())
 		return
 	} else {
-		PanicException_(responseKey.GetResponseStatus(), responseKey.GetResponseMessage())
+		PanicException_(responseKey.GetResponseStatus(), *message)
 	}
 
 }
@@ -65,6 +65,9 @@ func PanicHandler(c *fiber.Ctx) error {
 			return c.Status(http.StatusBadRequest).JSON(BuildResponse_(http.StatusBadRequest, msg, Null()))
 		case
 			codes.AlreadyExists.String():
+			return c.Status(http.StatusBadRequest).JSON(BuildResponse_(http.StatusBadRequest, msg, Null()))
+		case
+			codes.InvalidArgument.String():
 			return c.Status(http.StatusBadRequest).JSON(BuildResponse_(http.StatusBadRequest, msg, Null()))
 		case
 			constant.ValidateError.GetResponseStatus():

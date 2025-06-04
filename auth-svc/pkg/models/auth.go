@@ -8,12 +8,16 @@ import (
 
 type User struct {
 	BaseModel `bson:",inline"`
-	Email     string `json:"email" bson:"email,omitempty"`
-	Password  string `json:"password" bson:"password,omitempty"`
+	Email     string `json:"email" validate:"required,email" bson:"email,omitempty"`
+	Password  string `json:"password" validate:"required,min=6" bson:"password,omitempty"`
 }
 
 func (u *User) SetID(id primitive.ObjectID) {
 	u.ID = id
+}
+
+func (u *User) GetID() primitive.ObjectID {
+	return u.ID
 }
 
 func (u *User) SetTimestamps() {

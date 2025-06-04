@@ -6,6 +6,7 @@ import (
 	"auth-svc/pkg/pb"
 	"auth-svc/pkg/repositories"
 	"auth-svc/pkg/services"
+	"auth-svc/pkg/utils"
 
 	"log"
 	"net"
@@ -33,8 +34,15 @@ func main() {
 	grpcServer := grpc.NewServer()
 	userCollection := con.Database(c.DbName).Collection(c.UserCollection)
 	userRepo := repositories.NewUserRepository(userCollection)
+	jwt := utils.JWTWrapper{
+		SecretKey:       c.JWTSecretKey,
+		Issuer:          "go-grpc-auth-svc",
+		ExpirationHours: 24 * 365,
+	}
+
 	s := services.Server{
 		UserRepo: userRepo,
+		Jwt:      &jwt,
 	}
 	pb.RegisterAuthServiceServer(grpcServer, &s)
 

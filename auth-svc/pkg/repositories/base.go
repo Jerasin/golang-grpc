@@ -3,21 +3,26 @@ package repositories
 import (
 	"context"
 
+	"github.com/goforj/godump"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type BaseRepository[T any] interface {
-	Save(data T) (T, error)
-	IsExist(filters primitive.M) (T, error)
-	FindByID(id primitive.ObjectID) (T, error)
-	FindAll(filters map[string]any) ([]T, error)
-	Update(id primitive.ObjectID, data T) (T, error)
-	Delete(id primitive.ObjectID) error
-	Count(filters map[string]any) (int64, error)
+	Save(ctx context.Context, data T) (T, error)
+	IsExist(ctx context.Context, filters primitive.M) (T, error)
+	FindOne(ctx context.Context, filters map[string]any) (T, error)
+	FindAll(ctx context.Context, filters map[string]any) ([]T, error)
+	Update(ctx context.Context, id primitive.ObjectID, data T) (T, error)
+	Delete(ctx context.Context, id primitive.ObjectID) error
+	Count(ctx context.Context, filters map[string]any) (int64, error)
+	Transaction(ctx context.Context, fn func(ctx context.Context) (any, error)) (any, error)
 }
 
 type Timestamped interface {
+	GetID() primitive.ObjectID
 	SetID(primitive.ObjectID)
 	SetTimestamps()
 }
@@ -40,39 +45,52 @@ func MakeFilter(filters map[string]any) primitive.M {
 	return filter
 }
 
-func (r *baseRepository[T]) Save(data T) (T, error) {
+func (r *baseRepository[T]) Save(ctx context.Context, data T) (T, error) {
 	data.SetID(primitive.NewObjectID())
 	data.SetTimestamps()
 
-	_, err := r.Collection.InsertOne(context.Background(), data)
+	_, err := r.Collection.InsertOne(ctx, data)
 	if err != nil {
 		var zero T
 		return zero, err
 	}
+
 	return data, nil
 }
 
-func (r *baseRepository[T]) IsExist(filters primitive.M) (T, error) {
-	var zero T
-	result := r.Collection.FindOne(context.Background(), filters)
+func (r *baseRepository[T]) IsExist(ctx context.Context, filters primitive.M) (T, error) {
+	var resource T
+	result := r.Collection.FindOne(ctx, filters)
+
+	godump.Dump("Err", result.Err())
 
 	if result.Err() != nil {
-		return zero, result.Err()
+
+		if result.Err() == mongo.ErrNoDocuments {
+			return resource, nil // No document found, return zero value
+		}
+
+		return resource, result.Err()
 	}
 
 	var data T
 	err := result.Decode(&data)
 	if err != nil {
-		return zero, err
+		return resource, err
+	}
+
+	godump.Dump("check", data.GetID() == (primitive.NilObjectID))
+	if !(data.GetID() == (primitive.NilObjectID)) {
+		return resource, status.Error(codes.AlreadyExists, "Resource already exists")
 	}
 
 	data.SetID(primitive.NewObjectID())
 	return data, nil
 }
 
-func (r *baseRepository[T]) FindByID(id primitive.ObjectID) (T, error) {
+func (r *baseRepository[T]) FindOne(ctx context.Context, filters map[string]any) (T, error) {
 	var zero T
-	filter := MakeFilter(map[string]any{"_id": id})
+	filter := MakeFilter(filters)
 	result := r.Collection.FindOne(context.Background(), filter)
 
 	if result.Err() != nil {
@@ -85,10 +103,9 @@ func (r *baseRepository[T]) FindByID(id primitive.ObjectID) (T, error) {
 		return zero, err
 	}
 
-	data.SetID(id)
 	return data, nil
 }
-func (r *baseRepository[T]) FindAll(filters map[string]any) ([]T, error) {
+func (r *baseRepository[T]) FindAll(ctx context.Context, filters map[string]any) ([]T, error) {
 	filter := MakeFilter(filters)
 	cursor, err := r.Collection.Find(context.Background(), filter)
 	if err != nil {
@@ -114,7 +131,7 @@ func (r *baseRepository[T]) FindAll(filters map[string]any) ([]T, error) {
 	return results, nil
 }
 
-func (r *baseRepository[T]) Update(id primitive.ObjectID, data T) (T, error) {
+func (r *baseRepository[T]) Update(ctx context.Context, id primitive.ObjectID, data T) (T, error) {
 	data.SetID(id)
 	data.SetTimestamps()
 
@@ -130,7 +147,7 @@ func (r *baseRepository[T]) Update(id primitive.ObjectID, data T) (T, error) {
 	return data, nil
 }
 
-func (r *baseRepository[T]) Delete(id primitive.ObjectID) error {
+func (r *baseRepository[T]) Delete(ctx context.Context, id primitive.ObjectID) error {
 	filter := MakeFilter(map[string]any{"_id": id})
 	_, err := r.Collection.DeleteOne(context.Background(), filter)
 	if err != nil {
@@ -139,11 +156,26 @@ func (r *baseRepository[T]) Delete(id primitive.ObjectID) error {
 	return nil
 }
 
-func (r *baseRepository[T]) Count(filters map[string]any) (int64, error) {
+func (r *baseRepository[T]) Count(ctx context.Context, filters map[string]any) (int64, error) {
 	filter := MakeFilter(filters)
 	count, err := r.Collection.CountDocuments(context.Background(), filter)
 	if err != nil {
 		return 0, err
 	}
 	return count, nil
+}
+
+func (r *baseRepository[T]) Transaction(ctx context.Context, fn func(ctx context.Context) (any, error)) (any, error) {
+	session, err := r.Collection.Database().Client().StartSession()
+	if err != nil {
+		return nil, err
+	}
+	defer session.EndSession(ctx)
+
+	wrappedFn := func(sc mongo.SessionContext) (any, error) {
+		data, err := fn(sc)
+		return data, err
+	}
+
+	return session.WithTransaction(ctx, wrappedFn)
 }

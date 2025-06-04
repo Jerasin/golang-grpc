@@ -14,8 +14,6 @@ type UserRepository struct {
 
 func NewUserRepository(collection *mongo.Collection) *UserRepository {
 	return &UserRepository{
-		BaseRepository: BaseRepository[*models.User]{
-			Collection: collection,
-		},
+		BaseRepository: NewBaseRepository[*models.User](collection),
 	}
 }

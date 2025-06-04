@@ -13,7 +13,7 @@ import (
 
 type Server struct {
 	pb.UnimplementedAuthServiceServer
-	UserRepo *repositories.UserRepository
+	UserRepo repositories.BaseRepository[*models.User]
 }
 
 func (s *Server) Test(_ context.Context, req *pb.TestRequest) (*pb.TestResponse, error) {
@@ -22,13 +22,12 @@ func (s *Server) Test(_ context.Context, req *pb.TestRequest) (*pb.TestResponse,
 	}, nil
 }
 
-func (s *Server) Register(_ context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-
+func (s *Server) Register(c context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	if _, err := s.UserRepo.IsExist(map[string]any{"email": req.Email}); err == nil {
 		return nil, status.Errorf(codes.AlreadyExists, "Email already exists")
 	}
 
-	s.UserRepo.Register(&models.User{
+	s.UserRepo.Save(&models.User{
 		Email:    req.Email,
 		Password: utils.HashPassword(req.Password),
 	})

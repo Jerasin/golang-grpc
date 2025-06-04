@@ -2,6 +2,8 @@ package services
 
 import (
 	"api-gateway/pkg/auth/pb"
+	"api-gateway/pkg/constant"
+	"api-gateway/pkg/utils"
 	"context"
 
 	"github.com/gofiber/fiber/v2"
@@ -10,26 +12,18 @@ import (
 
 func RegisterUser(service pb.AuthServiceClient) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Logic for registering a user
+		defer utils.PanicHandler(c)
+
 		var req pb.RegisterRequest
 		if err := c.BodyParser(&req); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Invalid request body",
-			})
+			errMsg := "Failed to parse request body"
+			utils.PanicException(constant.BadRequest, &errMsg)
 		}
 
 		_, err := service.Register(context.Background(), &req)
 		if err != nil {
 			godump.Dump(err.Error())
-			if err.Error() == "rpc error: code = AlreadyExists desc = Email already exists" {
-				return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-					"error": "Email already exists",
-				})
-			}
-
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to register user",
-			})
+			utils.GrpcPanicException(err, nil)
 		}
 
 		return c.JSON(fiber.Map{

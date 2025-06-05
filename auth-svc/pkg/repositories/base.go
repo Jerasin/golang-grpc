@@ -21,17 +21,17 @@ type BaseRepository[T any] interface {
 	Transaction(ctx context.Context, fn func(ctx context.Context) (any, error)) (any, error)
 }
 
-type Timestamped interface {
+type Properties interface {
 	GetID() primitive.ObjectID
 	SetID(primitive.ObjectID)
 	SetTimestamps()
 }
 
-type baseRepository[T Timestamped] struct {
+type baseRepository[T Properties] struct {
 	Collection *mongo.Collection
 }
 
-func NewBaseRepository[T Timestamped](collection *mongo.Collection) BaseRepository[T] {
+func NewBaseRepository[T Properties](collection *mongo.Collection) BaseRepository[T] {
 	return &baseRepository[T]{Collection: collection}
 }
 

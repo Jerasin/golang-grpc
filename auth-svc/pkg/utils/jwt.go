@@ -54,7 +54,7 @@ func (w *JWTWrapper) ValidateToken(singedToken string, role string) (claims *jwt
 	token, err := jwt.ParseWithClaims(
 		singedToken,
 		&jwtClaims{},
-		func(token *jwt.Token) (interface{}, error) {
+		func(token *jwt.Token) (any, error) {
 			return []byte(w.SecretKey), nil
 		})
 	if err != nil {

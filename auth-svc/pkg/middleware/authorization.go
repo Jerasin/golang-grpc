@@ -26,8 +26,8 @@ func AuthorizationInterceptor(
 		return "", status.Errorf(codes.InvalidArgument, "missing metadata")
 	}
 
-	if !slices.ContainsFunc(*options, func(u CustomParameterMiddleware) bool {
-		return u.SkipPath == info.FullMethod
+	if slices.ContainsFunc(*options, func(u CustomParameterMiddleware) bool {
+		return u.SkipPath != info.FullMethod
 	}) {
 		values := md["authorization"]
 		if len(values) == 0 {

@@ -49,8 +49,8 @@ func LoggerInterceptor(
 		jsonRes = string(jsonResData)
 	}
 
-	if !slices.ContainsFunc(*options, func(u CustomParameterMiddleware) bool {
-		return u.SkipPath == info.FullMethod
+	if slices.ContainsFunc(*options, func(u CustomParameterMiddleware) bool {
+		return u.SkipPath != info.FullMethod
 	}) {
 		var traceID []string
 		md, ok := metadata.FromIncomingContext(ctx)
